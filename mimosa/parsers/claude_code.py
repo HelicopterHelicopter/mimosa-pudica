@@ -32,7 +32,7 @@ _BASH_FILE_RE = re.compile(
 )
 
 # Known tools that take a primary file_path argument
-_FILE_PATH_TOOLS = {"Read", "Write", "EditNotebook"}
+_FILE_PATH_TOOLS = {"Read", "Write", "Edit", "EditNotebook"}
 # Tools that take a directory/path argument
 _PATH_TOOLS = {"Grep", "SemanticSearch"}
 # Glob tool
@@ -159,7 +159,7 @@ class ClaudeCodeParser:
                 # For Write, the limit is content length – not a useful line_end
                 if tool_name == "Write":
                     line_end = None
-                ref_type = RefType.WRITE if tool_name == "Write" else RefType.READ
+                ref_type = RefType.WRITE if tool_name in {"Write", "Edit", "EditNotebook"} else RefType.READ
                 refs.append(
                     Reference(
                         session_id=session_id,

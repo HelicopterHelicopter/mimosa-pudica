@@ -93,11 +93,11 @@ class Config:
             encoded = _encode_path_for_claude(self.repo_root)
             specific_dir = projects_dir / encoded
             if specific_dir.exists():
-                yield from specific_dir.glob("sessions/*.jsonl")
+                yield from specific_dir.glob("*.jsonl")
                 return
 
         # Fallback: scan all sessions (e.g. not in a repo, or encoding didn't match)
-        yield from projects_dir.glob("*/sessions/*.jsonl")
+        yield from projects_dir.glob("*/*.jsonl")
 
     def cursor_transcript_files(self) -> Iterator[Path]:
         """Yield Cursor transcript JSONL files scoped to the current repo."""
@@ -106,11 +106,14 @@ class Config:
             return
 
         if self.repo_root is not None:
+            # Cursor uses heuristic path extraction (relative paths), so we must
+            # only scan the exact project directory. Falling back to all projects
+            # would contaminate this repo's DB with refs from other repos.
             encoded = _encode_path_for_cursor(self.repo_root)
             specific_dir = transcripts_dir / encoded
             if specific_dir.exists():
                 yield from specific_dir.glob("agent-transcripts/**/*.jsonl")
-                return
+            return
 
         yield from transcripts_dir.glob("*/agent-transcripts/**/*.jsonl")
 
@@ -216,16 +219,18 @@ def _encode_path_for_claude(repo_root: Path) -> str:
     """Generate the Claude Code encoded directory name for a repo root.
 
     /Users/foo/bar → -Users-foo-bar
+    /Users/foo/my_project → -Users-foo-my-project  (underscores → dashes)
     """
-    return str(repo_root).replace("/", "-")
+    return str(repo_root).replace("/", "-").replace("_", "-")
 
 
 def _encode_path_for_cursor(repo_root: Path) -> str:
     """Generate the Cursor encoded directory name for a repo root.
 
     /Users/foo/bar → Users-foo-bar
+    /Users/foo/my_project → Users-foo-my-project  (underscores → dashes)
     """
-    return str(repo_root).lstrip("/").replace("/", "-")
+    return str(repo_root).lstrip("/").replace("/", "-").replace("_", "-")
 
 
 def get_config(repo_root: Optional[Path] = None) -> Config:
